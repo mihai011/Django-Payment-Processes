@@ -13,5 +13,33 @@
         {% endif %}
     {% endfor %}
     <button type="submit" class="btn btn-success">Make payment</button>
+
+
+    <ul>
+      {% for task in tasks %}
+      
+        {% if task.status == 'SUCCESS' %}
+          <li color='green'>
+            {{ task.task_id }} {{task.status}}
+          </li>
+        {% endif %}
+
+        {% if task.status == 'FAILURE' %}
+          <li color='red'>
+            {{ task.task_id }} {{task.status}}
+          </li>
+        {% endif %}
+
+        {% if task.status == 'PENDING' %}
+        <li color='yellow'>
+          {{ task.task_id }} {{task.status}}
+        </li>
+      {% endif %}
+
+      {% endfor %}
+    </ul>
+    
+
   </form>
+
 {% endblock %}

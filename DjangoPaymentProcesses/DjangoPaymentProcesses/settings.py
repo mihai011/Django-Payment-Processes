@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'payments',
     'prediction',
     'crispy_forms',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -122,3 +123,6 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'default'

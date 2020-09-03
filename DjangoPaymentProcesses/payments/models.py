@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 import payments.validators as validators
+from json import JSONEncoder
 # Create your models here.
 
 

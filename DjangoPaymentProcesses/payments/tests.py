@@ -1,7 +1,14 @@
 from django.test import TestCase, RequestFactory
 from payments.forms import PaymentForm
 from payments.views import PaymentView
+from payments.gateways import CheapGateway, ExpensiveGateway, PremiumGateway
+from payments.dispatcher import Dispatcher
+from payments.models import Payment
 from django.test import Client
+from django.forms.models import model_to_dict
+
+
+from http import HTTPStatus
 
 import datetime
 # Create your tests here.
@@ -111,7 +118,7 @@ class TestViewClass(TestCase):
 
         response = self.client.get('/payment/')
 
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(response, 'payment.html')
 
     def test_post_valid_payment(self):
@@ -126,7 +133,7 @@ class TestViewClass(TestCase):
 
         response = self.client.post('/payment/', data)
 
-        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_post_invalid_payment(self):
 
@@ -140,5 +147,244 @@ class TestViewClass(TestCase):
         response = self.client.post('/payment/', data)
 
 
-        self.assertEqual(response.status_code,400)
+        self.assertEqual(response.status_code,HTTPStatus.BAD_REQUEST)
 
+class TestGateways(TestCase):
+
+    def test_available_cheap_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 12
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        gateway = CheapGateway()
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.OK)
+
+        gateway = CheapGateway(False)
+        status = gateway.process(payment)
+        self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
+
+    def test_unavailable_cheap_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 12
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        gateway = CheapGateway(False)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
+
+    def test_too_much_cheap_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 1000
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        gateway = CheapGateway()
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+
+
+
+    def test_available_expensive_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 25
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = ExpensiveGateway()
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.OK)
+
+    def test_unavailable_expensive_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 25
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = ExpensiveGateway(False)
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
+
+    def test_too_much_expensive_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 1000
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = ExpensiveGateway()
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+
+    def test_too_little_expensive_gateway(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 10
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = ExpensiveGateway()
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+        
+
+    def test_avaialble_premium_gateways(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 600
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = PremiumGateway()
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.OK)
+
+    def test_unavaialble_premium_gateways(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 600
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = PremiumGateway(False)
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
+
+    def test_too_little_premium_gateways(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 100
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        gateway = PremiumGateway()
+        payment = model_to_dict(payment)
+        status = gateway.process(payment)
+
+        self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+
+    
+
+        
+
+class TestDispatchFunction(TestCase):
+
+    def test_functionality_case_cheap(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 10
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        result = Dispatcher.dispatch(payment)
+        
+        self.assertEqual(result, HTTPStatus.OK)
+
+    def test_functionality_case_expensive(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 50
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        result = Dispatcher.dispatch(payment)
+
+        self.assertEqual(result, HTTPStatus.OK)
+
+
+    def test_functionality_case_premium(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 501
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        result = Dispatcher.dispatch(payment)
+
+        self.assertEqual(result, HTTPStatus.OK)
