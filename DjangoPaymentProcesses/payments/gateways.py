@@ -3,75 +3,90 @@ import time
 import random
 
 class CheapGateway:
-
+    
 
     def __init__(self, available=True):
 
         self.available = available
+        self.name = "Cheap Gateway"
 
     def process(self, payment):
+        
+        status = HTTPStatus.OK
 
         if not self.available:
-            return HTTPStatus.TOO_MANY_REQUESTS
+            status = HTTPStatus.TOO_MANY_REQUESTS
+            return self.name, status
 
         if payment["amount"] >= 500:
-            return HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
 
-        if payment["amount"] < 20 or payment["amount"] < 500:
+            status = HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+
+        if payment["amount"] < 500:
             # simulate processing of payment
             self.available = False
-            time.sleep(random.randint(20,50))
+            time.sleep(random.randint(1,2))
             self.available = True
-            return HTTPStatus.OK
+            status = HTTPStatus.OK
 
-
-
+        return self.name, status
 
 class ExpensiveGateway:
 
-    
+
     def __init__(self, available=True):
 
         self.available = available
+        self.name = "Expensive Gateway"
 
     def process(self, payment):
 
+        status = HTTPStatus.OK
+
         if not self.available:
-            return HTTPStatus.TOO_MANY_REQUESTS
+            status = HTTPStatus.TOO_MANY_REQUESTS
+            return self.name, status
 
         if payment["amount"] >= 500:
-            return HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+            status = HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
         
         if payment["amount"] <= 20:
-            return HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+            status = HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
 
-        if payment["amount"] >= 21 or payment["amount"] < 500:
+        if payment["amount"] >= 21 and payment["amount"] < 500:
             # simulate processing of payment
             self.available = False
-            time.sleep(random.randint(1,5))
+            time.sleep(random.randint(1,2))
             self.available = True
-            return HTTPStatus.OK
+            status = HTTPStatus.OK
 
-
-
+        return self.name, status
 
 class PremiumGateway:
 
+   
+
     def __init__(self, available=True):
 
         self.available = available
+        self.name = "Premium Gateway"
 
     def process(self, payment):
 
-        if not self.available:
-            return HTTPStatus.TOO_MANY_REQUESTS
+        status = HTTPStatus.OK
 
-        if payment["amount"] <= 500:
-            return HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
+        if not self.available:
+            status = HTTPStatus.TOO_MANY_REQUESTS
+            return self.name, status
+
+        if payment["amount"] < 500:
+            status = HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE
         
-        if payment["amount"] > 500:
+        if payment["amount"] >= 500:
             # simulate processing of payment
             self.available = False
-            time.sleep(random.randint(20,50))
+            time.sleep(random.randint(1,2))
             self.available = True
-            return HTTPStatus.OK
+            status = HTTPStatus.OK
+
+        return self.name, status

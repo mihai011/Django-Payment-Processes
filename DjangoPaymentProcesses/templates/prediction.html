@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block content %}
+<h1 class="mt-2">Django paymen{% extends 'base.html' %}
+
+    {% load crispy_forms_tags %}
+    
+    {% block content %}
+    <h1 class="mt-2">Django prediction</h1>
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            {{ field | as_crispy_field}}
+            {% if field.help_text %}
+            <p class="help">{{ field.help_text|safe }}</p>
+            {% endif %}
+        {% endfor %}
+        <button type="submit" class="btn btn-success">Make prediction</button>
+    
+        <table class="table">
+          <thead class="thead-dark">
+            <tr>
+              <th scope="col">id</th>
+              <th scope="col">Resolver</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+    
+            {% for task in tasks %}
+            {% if task.status == 'SUCCESS' %}
+            <tr color="green">
+            {% endif %}
+            {% if task.status == 'FAILURE' %}
+            <tr color="red">
+            {% endif %}
+            {% if task.status == 'STARTED' %}
+            <tr color="yellow">
+            {% endif %}
+    
+              <th>{{ task.task_id }} </th>
+              <th>{{task.resolver}} </th>
+              <th>{{task.status}} </th>
+            </tr>
+    
+    
+    
+          {% endfor %}
+    
+          </tbody>
+        </table>
+        <ul>
+          
+        </ul>
+        
+    
+      </form>
+    
+    {% endblock %}t</h1>
+  <form method="post">
+    {% csrf_token %}
+    {% for field in form %}
+        {{ field | as_crispy_field}}
+        {% if field.help_text %}
+        <p class="help">{{ field.help_text|safe }}</p>
+        {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn btn-success">Make payment</button>
+
+    <table class="table">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col">id</th>
+          <th scope="col">Resolver</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        {% for task in tasks %}
+        {% if task.status == 'SUCCESS' %}
+        <tr color="green">
+        {% endif %}
+        {% if task.status == 'FAILURE' %}
+        <tr color="red">
+        {% endif %}
+        {% if task.status == 'STARTED' %}
+        <tr color="yellow">
+        {% endif %}
+
+          <th>{{ task.task_id }} </th>
+          <th>{{task.resolver}} </th>
+          <th>{{task.status}} </th>
+        </tr>
+
+
+
+      {% endfor %}
+
+      </tbody>
+    </table>
+    <ul>
+      
+    </ul>
+    
+
+  </form>
+
+{% endblock %}

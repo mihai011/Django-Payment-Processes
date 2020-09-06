@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'prediction',
     'crispy_forms',
     'django_celery_results',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -126,3 +127,4 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_CACHE_BACKEND = 'default'
+CELERY_ALWAYS_EAGER = True

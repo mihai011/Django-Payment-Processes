@@ -7,7 +7,6 @@ from payments.models import Payment
 from django.test import Client
 from django.forms.models import model_to_dict
 
-
 from http import HTTPStatus
 
 import datetime
@@ -165,12 +164,13 @@ class TestGateways(TestCase):
         payment = model_to_dict(payment)
 
         gateway = CheapGateway()
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.OK)
 
         gateway = CheapGateway(False)
-        status = gateway.process(payment)
+        name , status = gateway.process(payment)
+
         self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
 
     def test_unavailable_cheap_gateway(self):
@@ -187,7 +187,7 @@ class TestGateways(TestCase):
         payment = model_to_dict(payment)
 
         gateway = CheapGateway(False)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
 
@@ -205,7 +205,7 @@ class TestGateways(TestCase):
         payment = model_to_dict(payment)
 
         gateway = CheapGateway()
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
 
@@ -224,7 +224,7 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = ExpensiveGateway()
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.OK)
 
@@ -241,7 +241,7 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = ExpensiveGateway(False)
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name , status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
 
@@ -258,9 +258,9 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = ExpensiveGateway()
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
-        self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
+        self.assertEqual(status, HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
 
     def test_too_little_expensive_gateway(self):
 
@@ -275,7 +275,7 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = ExpensiveGateway()
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
         
@@ -293,7 +293,7 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = PremiumGateway()
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.OK)
 
@@ -310,7 +310,7 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = PremiumGateway(False)
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.TOO_MANY_REQUESTS)
 
@@ -327,7 +327,7 @@ class TestGateways(TestCase):
         payment = payment.save()
         gateway = PremiumGateway()
         payment = model_to_dict(payment)
-        status = gateway.process(payment)
+        name, status = gateway.process(payment)
 
         self.assertEqual(status,HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE)
 
@@ -350,9 +350,12 @@ class TestDispatchFunction(TestCase):
         payment = payment.save()
         payment = model_to_dict(payment)
 
-        result = Dispatcher.dispatch(payment)
-        
-        self.assertEqual(result, HTTPStatus.OK)
+        Dispatcher.cheap_gateway = CheapGateway(True)
+
+        name, status = Dispatcher.dispatch(payment)
+
+        self.assertEqual(status, HTTPStatus.OK)
+        self.assertEqual(name, Dispatcher.cheap_gateway.name)
 
     def test_functionality_case_expensive(self):
 
@@ -367,10 +370,10 @@ class TestDispatchFunction(TestCase):
         payment = payment.save()
         payment = model_to_dict(payment)
 
-        result = Dispatcher.dispatch(payment)
+        name, status = Dispatcher.dispatch(payment)
 
-        self.assertEqual(result, HTTPStatus.OK)
-
+        self.assertEqual(status, HTTPStatus.OK)
+        self.assertEqual(name, Dispatcher.expensive_gateway.name)
 
     def test_functionality_case_premium(self):
 
@@ -385,6 +388,109 @@ class TestDispatchFunction(TestCase):
         payment = payment.save()
         payment = model_to_dict(payment)
 
-        result = Dispatcher.dispatch(payment)
+        name, status = Dispatcher.dispatch(payment)
 
-        self.assertEqual(result, HTTPStatus.OK)
+        self.assertEqual(status, HTTPStatus.OK)
+        self.assertEqual(name, Dispatcher.premium_gateway.name)
+
+    def test_functionality_case_unavailable_cheap(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 15
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        Dispatcher.cheap_gateway = CheapGateway(False)
+
+        name, status = Dispatcher.dispatch(payment)
+
+        self.assertEqual(status, HTTPStatus.TOO_MANY_REQUESTS)
+        self.assertEqual(name, Dispatcher.cheap_gateway.name)
+
+    def test_functionality_case_unavailable_expensive(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 100
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        Dispatcher.cheap_gateway = CheapGateway(True)
+        Dispatcher.expensive_gateway = ExpensiveGateway(False)
+
+        name, status = Dispatcher.dispatch(payment)
+
+        self.assertEqual(status, HTTPStatus.OK)
+        self.assertEqual(name, Dispatcher.cheap_gateway.name)
+
+    def test_functionality_case_available_expensive(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 100
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        Dispatcher.cheap_gateway = CheapGateway(False)
+        Dispatcher.expensive_gateway = ExpensiveGateway(True)
+
+        name, status = Dispatcher.dispatch(payment)
+
+        self.assertEqual(status, HTTPStatus.OK)
+        self.assertEqual(name, Dispatcher.expensive_gateway.name)
+
+    def test_functionality_case_available_premium(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 1000
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        Dispatcher.premium_gateway = PremiumGateway(True)
+
+        name, status = Dispatcher.dispatch(payment)
+
+        self.assertEqual(status, HTTPStatus.OK)
+        self.assertEqual(name, Dispatcher.premium_gateway.name)
+
+    def test_functionality_case_unavailable_premium(self):
+
+        data = {}
+        data["creditcardnumber"] = "4024007129931746"
+        data["cardholder"] = "John Doe"
+        data["expirationdate"] = datetime.date(2021,6,5)
+        data["securitycode"] = "043"
+        data["amount"] = 1000
+
+        payment = PaymentForm(data)
+        payment = payment.save()
+        payment = model_to_dict(payment)
+
+        Dispatcher.premium_gateway = PremiumGateway(False)
+
+        name, status = Dispatcher.dispatch(payment)
+
+        self.assertEqual(status, HTTPStatus.TOO_MANY_REQUESTS)
+        self.assertEqual(name, Dispatcher.premium_gateway.name)

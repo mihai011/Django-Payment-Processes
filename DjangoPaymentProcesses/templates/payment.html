@@ -14,29 +14,40 @@
     {% endfor %}
     <button type="submit" class="btn btn-success">Make payment</button>
 
+    <table class="table">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col">id</th>
+          <th scope="col">Resolver</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
 
-    <ul>
-      {% for task in tasks %}
-      
+        {% for task in tasks %}
         {% if task.status == 'SUCCESS' %}
-          <li color='green'>
-            {{ task.task_id }} {{task.status}}
-          </li>
+        <tr color="green">
         {% endif %}
-
         {% if task.status == 'FAILURE' %}
-          <li color='red'>
-            {{ task.task_id }} {{task.status}}
-          </li>
+        <tr color="red">
+        {% endif %}
+        {% if task.status == 'STARTED' %}
+        <tr color="yellow">
         {% endif %}
 
-        {% if task.status == 'PENDING' %}
-        <li color='yellow'>
-          {{ task.task_id }} {{task.status}}
-        </li>
-      {% endif %}
+          <th>{{ task.task_id }} </th>
+          <th>{{task.resolver}} </th>
+          <th>{{task.status}} </th>
+        </tr>
+
+
 
       {% endfor %}
+
+      </tbody>
+    </table>
+    <ul>
+      
     </ul>
     
 
