@@ -21,13 +21,13 @@ Special requirements: Make sure you have a RabbitMq server running on your host 
 
 Instalation:
 
-'''
+```
 
-pip install -r requirements.txt
-python manage.py makemigrations
-python manage,py migrate
-python manage.py runserver
+pip install -r requirements.txt 
+python manage.py makemigrations 
+python manage,py migrate 
+python manage.py runserver 
 
-'''
+```
 
 
